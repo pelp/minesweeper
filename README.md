@@ -14,3 +14,5 @@ To build the WASM version simply run:
   make wasm
 ```
 The files you need to host are located under `output/www`.
+
+A version of the WASM game is hosted on https://mine.toastyfiles.com
