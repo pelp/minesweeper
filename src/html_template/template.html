@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Minesweeper</title>
+
+  </head>
+    <style>
+        @font-face {
+            font-family: Calculator;
+            src: url(digital-7.mono.ttf);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            --info-font: 'Calculator', sans-serif;
+            --game-font: monospace;
+            --cover-color: #999;
+            --uncover-color: #CCC;
+            --background-color: url("https://www.sixt.se/magazine/wp-content/uploads//sites/14/2021/10/Stockholms_skargard_Roslagen.jpg");
+            margin: 0;
+            padding: 0;
+            background: var(--background-color);
+            background-size: cover;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+        }
+        .wrapper {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            width: fit-content;
+            border-style: outset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            padding: 5px;
+            background: var(--cover-color);
+            box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.4);
+        }
+        .info_wrapper {
+            width: 100%;
+            background: var(--cover-color);
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            margin-bottom: 5px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px;
+        }
+        .info_wrapper > div {
+            border-style: outset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            user-select: none;
+            font-family: var(--info-font);
+        }
+        .dificulty_wrapper {
+            display: grid;
+            grid-template-columns: auto auto;
+            grid-template-rows: auto auto;
+            grid-auto-flow: column;
+        }
+        .dificulty_wrapper > div {
+            border-style: outset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+        }
+        .dificulty_wrapper > div:active {
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+        }
+        .dificulty_wrapper > div:hover {
+            cursor: pointer;
+        }
+        .text_info {
+            font-size: 40px;
+            text-align: right;
+        }
+        .text_info > div {
+            height: 40px;
+            padding: 2px;
+            padding-top: 1px;
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            color: red;
+            background: black;
+        }
+        .right_wrapper {
+            display: flex;
+            flex-direction: row;
+        }
+        .right_wrapper > div {
+            flex-grow: 1;
+        }
+        .restart {
+            aspect-ratio: 1;
+            vertical-align: middle;
+            font-size: 30px;
+            text-align: center;
+            padding: 0;
+        }
+        .restart:hover {
+            cursor: pointer;
+        }
+        .restart:active {
+            border-style: inset;
+        }
+        .grid_wrapper {
+            display: grid;
+            grid-gap: 0px;
+            align-items: center;
+            justify-items: center;
+            width: fit-content;
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            font-family: var(--game-font);
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .square {
+            background: var(--uncover-color);
+            height: 30px;
+            width: 30px;
+
+            border-style: solid;
+            border-color: var(--cover-color);
+            border-width: 1px;
+            text-align: center;
+        }
+        .square[data-tile="10"], .square[data-tile="11"] {
+            border-style: outset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+        }
+        .square::before {
+            content: attr(data-tile);
+            width: 100%;
+            height: 100%;
+            display: inline-block;
+        }
+        .square[data-tile="0"]::before {
+            content: "";
+        }
+        .square[data-tile="1"]::before {
+            color: blue;
+        }
+        .square[data-tile="2"]::before {
+            color: green;
+        }
+        .square[data-tile="3"]::before {
+            color: red;
+        }
+        .square[data-tile="4"]::before {
+            color: darkblue;
+        }
+        .square[data-tile="5"]::before {
+            color: maroon;
+        }
+        .square[data-tile="5"]::before {
+            color: maroon;
+        }
+        .square[data-tile="6"]::before {
+            color: cyan;
+        }
+        .square[data-tile="7"]::before {
+            color: purple;
+        }
+        .square[data-tile="8"]::before {
+            color: black;
+        }
+        .square[data-tile="9"]::before {
+            color: black;
+            content: "💣";
+        }
+        .square[data-tile="10"]::before {
+            content: "🚩";
+            background: var(--cover-color);
+            color: red;
+        }
+        .square[data-tile="11"]::before {
+            background: var(--cover-color);
+            content: "";
+        }
+        .square[data-tile="9"] {
+            background: red;
+        }
+    </style>
+    <script type='text/javascript'>
+        var Module = {}
+        const generate_html = (width, height) => {
+            const elements = [];
+            const info_wrapper = document.createElement("div");
+            const flags_display = document.createElement("div");
+            const smiley_display = document.createElement("div");
+            const time_display = document.createElement("div");
+
+            const easy = document.createElement("div");
+            const medium = document.createElement("div");
+            const hard = document.createElement("div");
+            const expert = document.createElement("div");
+
+            const dif_wrapper = document.createElement("div");
+            const right_wrapper = document.createElement("div");
+            right_wrapper.classList.add("right_wrapper");
+            dif_wrapper.classList.add("dificulty_wrapper");
+
+            dif_wrapper.appendChild(easy);
+            dif_wrapper.appendChild(medium);
+            dif_wrapper.appendChild(hard);
+            dif_wrapper.appendChild(expert);
+
+            smiley_display.classList.add("restart");
+            flags_display.classList.add("text_info");
+            time_display.classList.add("text_info");
+            const flags_span = document.createElement("div");
+            const time_span = document.createElement("div");
+            flags_display.appendChild(flags_span);
+            time_display.appendChild(time_span);
+            let time = 0;
+
+            const updateTime = () => {
+                const time = Module._get_time()
+                time_span.innerHTML = time.toString().padStart(3, '0');
+            };
+
+            const interval = setInterval(() => {
+                updateTime();
+            }, 1000);
+
+            const render = () => {
+                const ptr = Module._state();
+                flags_span.innerHTML = Module._flags().toString().padStart(3, '0');
+                elements.forEach((e, i) => {
+                    e.dataset.tile = Module.HEAP8[i + ptr];
+                });
+                updateTime();
+            };
+
+            const restart = () => {
+                smiley_display.innerHTML = "🙂";
+                Module._start(mines, width, height);
+                render();
+            };
+
+
+            restart();
+
+            const wrapper = document.createElement("div");
+            wrapper.classList.add("wrapper");
+
+            const win = () => {
+                smiley_display.innerHTML = "😎";
+            };
+            const lose = () => {
+                smiley_display.innerHTML = "😵";
+            }
+
+            // Generate info
+
+            smiley_display.onclick = event => {
+                restart();
+            };
+            right_wrapper.appendChild(dif_wrapper);
+            right_wrapper.appendChild(time_display);
+
+            info_wrapper.appendChild(flags_display);
+            info_wrapper.appendChild(smiley_display);
+            info_wrapper.appendChild(right_wrapper);
+
+            info_wrapper.classList.add("info_wrapper");
+            wrapper.appendChild(info_wrapper);
+
+            // Generate grid
+            const grid_wrapper = document.createElement("div");
+            grid_wrapper.classList.add("grid_wrapper");
+
+            const generate_grid = () => {
+                grid_wrapper.innerHTML = "";
+                grid_wrapper.style.gridTemplateRows = "auto ".repeat(height);
+                grid_wrapper.style.gridTemplateColumns = "auto ".repeat(width);
+                elements.length = 0;
+                for (let i = 0; i < height; i++) {
+                    const line = document.createElement("div");
+                    for (let j = 0; j < width; j++) {
+                        const e = document.createElement("div");
+                        e.classList.add("square");
+                        e.onclick = event => {
+                            const ret = Module._peek(j, i);
+                            if (ret === 1) {
+                                lose();
+                            }
+                            if (ret === 2) {
+                                win();
+                            }
+                            render();
+                        }
+                        e.oncontextmenu = event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const ret = Module._flag(j, i);
+                            if (ret === 2) {
+                                win();
+                            }
+                            render();
+                        }
+                        grid_wrapper.appendChild(e);
+                        elements.push(e);
+                    }
+                }
+                wrapper.appendChild(grid_wrapper);
+                document.body.appendChild(wrapper);
+            };
+
+            const updateSettings = (_mines, _width, _height) => {
+                mines = _mines;
+                width = _width;
+                height = _height;
+                generate_grid();
+                restart();
+            }
+
+            easy.onclick = () => updateSettings(10, 9, 9);
+            medium.onclick = () => updateSettings(25, 12, 12);
+            hard.onclick = () => updateSettings(40, 16, 16);
+            expert.onclick = () => updateSettings(99, 30, 16);
+            easy.innerHTML = "Easy";
+            medium.innerHTML = "Medium";
+            hard.innerHTML = "Hard";
+            expert.innerHTML = "Expert";
+
+            generate_grid();
+
+            render();
+        };
+        let width = 30;
+        let height = 16;
+        let mines = 99;
+        Module.onRuntimeInitialized = event => {
+            generate_html(width, height);
+        };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
