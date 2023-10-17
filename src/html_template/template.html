@@ -287,7 +287,7 @@
 				});
 			};
 			// Setup WebSocket for leaderboard
-			const ws_link = (window.location.hostname === "localhost") ? 
+			const ws_link = (window.location.protocol === "http:") ? 
 				`ws://${window.location.hostname}:8764` :
 				`wss://${window.location.hostname}/ws`;
 			const socket = new WebSocket(ws_link);

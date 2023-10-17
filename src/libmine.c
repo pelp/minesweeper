@@ -9,13 +9,12 @@
 #define MIN(a, b) (a < b) ? a : b
 #define MAX(a, b) (a > b) ? a : b
 
-void _clear(char *field, int width, int height);
-void _random_mine(MSGame_t*);
-char _dist(MSGame_t*, int, int);
+void _clear(char*, int, int);
+void _random_mine(MSGame_t*, int*, int*);
 int _peek(MSGame_t*, int, int, int);
 void _step(MSGame_t*);
 void _generate(MSGame_t*);
-void _diff(char *cfield, char *pfield, int width, int height);
+void _diff(char*, char*, int, int);
 
 void MSGame_init(MSGame_t *game, int width, int height, int mines)
 {
@@ -43,41 +42,25 @@ void MSGame_init(MSGame_t *game, int width, int height, int mines)
 void _generate(MSGame_t *game)
 {
     // Generate the mines
+	int x, y;
     for (int i = 0; i < game->mines; i++)
     {
-        _random_mine(game);
-    }
+        _random_mine(game, &x, &y);
 
-    // Generate distances
-    for (int i = 0; i < game->height; i++)
-    {
-        for (int j = 0; j < game->width; j++)
-        {
-            game->field[i * game->width + j] = _dist(game, j, i);
-        }
+    	// Generate distances
+		int uy = MIN(y+2, game->height);
+		int ly = MAX(y-1, 0);
+		int ux = MIN(x+2, game->width);
+		int lx = MAX(x-1, 0);
+		for (int j = ly; j < uy; j++)
+		{
+			for (int k = lx; k < ux; k++)
+			{
+				if (j == y && k == x) continue;
+				game->field[j * game->width + k]++;
+			}
+		}
     }
-}
-
-char _dist(MSGame_t *game, int x, int y)
-{
-    char *val = &game->field[y * game->width + x];
-    if ((*val & MASK) == MINE) return *val;
-    int tot = 0;
-    int uy = MIN(y+2, game->height);
-    int ly = MAX(y-1, 0);
-    int ux = MIN(x+2, game->width);
-    int lx = MAX(x-1, 0);
-    for (int i = ly; i < uy; i++)
-    {
-        for (int j = lx; j < ux; j++)
-        {
-            if ((game->field[i * game->width + j] & MASK) == MINE)
-            {
-                tot++;
-            }
-        }
-    }
-    return tot | COVER_MASK;
 }
 
 void _clear(char *field, int width, int height)
@@ -91,17 +74,17 @@ void _clear(char *field, int width, int height)
     }
 }
 
-void _random_mine(MSGame_t *game)
+void _random_mine(MSGame_t *game, int *x, int *y)
 {
-    int x = rand() % game->width;
-    int y = rand() % game->height;
-    char *val = &game->field[y * game->width + x];
+    *x = rand() % game->width;
+    *y = rand() % game->height;
+    char *val = &game->field[*y * game->width + *x];
     if ((*val & MASK) == 0)
     {
         *val |= MINE;
         return;
     }
-    _random_mine(game);
+    _random_mine(game, x, y);
 }
 
 void MSGame_print(MSGame_t *game, char xray)
