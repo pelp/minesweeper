@@ -36,13 +36,56 @@
             align-items: center;
             flex-direction: column;
             width: fit-content;
+        }
+		.game {
+			display: flex;
+			align-items: stretch;
+		}
+		.game > div {
+            background: var(--cover-color);
             border-style: outset;
             border-color: var(--uncover-color);
             border-width: 3.5px;
-            padding: 5px;
-            background: var(--cover-color);
             box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.4);
-        }
+            padding: 5px;
+		}
+		.leaderboard {
+			margin-left: 5px;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.leaderboard > input {
+			font-family: var(--info-font);
+			width: 100px;
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+			background: black;
+			color: red;
+			font-size: 20px;
+			height: 30px;
+		}
+		.leaderboard > div {
+			font-family: var(--info-font);
+			margin-top: 5px;
+            border-style: inset;
+            border-color: var(--uncover-color);
+            border-width: 3.5px;
+            color: red;
+            background: black;
+			flex-grow: 1;
+			color: red;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.leaderboard > div > span > span:nth-child(1) {
+			float: left;
+		}
+		.leaderboard > div > span > span:nth-child(2) {
+			float: right;
+		}
         .info_wrapper {
             width: 100%;
             background: var(--cover-color);
@@ -201,6 +244,9 @@
         var Module = {}
         const generate_html = (width, height) => {
             const elements = [];
+			const game = document.createElement("div");
+            const wrapper = document.createElement("div");
+
             const info_wrapper = document.createElement("div");
             const flags_display = document.createElement("div");
             const smiley_display = document.createElement("div");
@@ -213,6 +259,47 @@
 
             const dif_wrapper = document.createElement("div");
             const right_wrapper = document.createElement("div");
+
+			const lb_wrapper = document.createElement("div");
+			const leaderboard = document.createElement("div");
+			const name_input = document.createElement("input");
+			const local_name = window.localStorage.getItem("name");
+			if (local_name === null) {
+				name_input.value = "anonymous";
+			} else {
+				name_input.value = local_name;
+			}
+			name_input.onchange = event => {
+				window.localStorage.setItem("name", name_input.value);
+			};
+
+			const updateLeaderboard = (scores) => {
+				leaderboard.innerHTML = "";
+				scores.forEach((person, _) => {
+					const span = document.createElement("span");
+					const n = document.createElement("span");
+					const t = document.createElement("span");
+					span.appendChild(n);
+					span.appendChild(t);
+					n.innerHTML = person[0];
+					t.innerHTML = person[1];
+					leaderboard.appendChild(span);
+				});
+			};
+			// Setup WebSocket for leaderboard
+			const ws_link = (window.location.hostname === "localhost") ? 
+				`ws://${window.location.hostname}:8764` :
+				`wss://${window.location.hostname}/ws`;
+			const socket = new WebSocket(ws_link);
+			socket.onmessage = event => {
+				updateLeaderboard(JSON.parse(event.data));
+			};
+
+			game.classList.add("game");
+			lb_wrapper.classList.add("leaderboard");
+			lb_wrapper.appendChild(name_input);
+			lb_wrapper.appendChild(leaderboard);
+
             right_wrapper.classList.add("right_wrapper");
             dif_wrapper.classList.add("dificulty_wrapper");
 
@@ -231,7 +318,7 @@
             let time = 0;
 
             const updateTime = () => {
-                const time = Module._get_time()
+                const time = Module._get_time();
                 time_span.innerHTML = time.toString().padStart(3, '0');
             };
 
@@ -257,11 +344,18 @@
 
             restart();
 
-            const wrapper = document.createElement("div");
             wrapper.classList.add("wrapper");
+
+			const postScore = () => {
+                const time = Module._get_time();
+				const name = name_input.value.toLowerCase();
+				const difficulty = window.localStorage.getItem("difficulty");
+				socket.send(JSON.stringify([name, time, difficulty]));
+			};
 
             const win = () => {
                 smiley_display.innerHTML = "😎";
+				postScore();
             };
             const lose = () => {
                 smiley_display.innerHTML = "😵";
@@ -320,7 +414,9 @@
                     }
                 }
                 wrapper.appendChild(grid_wrapper);
-                document.body.appendChild(wrapper);
+				game.appendChild(wrapper);
+				game.appendChild(lb_wrapper);
+                document.body.appendChild(game);
             };
 
             const updateSettings = (_mines, _width, _height) => {
@@ -329,12 +425,26 @@
                 height = _height;
                 generate_grid();
                 restart();
-            }
+            };
 
-            easy.onclick = () => updateSettings(10, 9, 9);
-            medium.onclick = () => updateSettings(25, 12, 12);
-            hard.onclick = () => updateSettings(40, 16, 16);
-            expert.onclick = () => updateSettings(99, 30, 16);
+			const setDifficulty = difficulty => {
+				const map = {'easy': [10, 9, 9],
+							 'medium': [25, 12, 12],
+							 'hard': [40, 16, 16],
+							 'expert': [99, 30, 16]};
+				const settings = map[difficulty];
+				window.localStorage.setItem("difficulty", difficulty);
+				if (socket.readyState === 1) {
+					socket.send(JSON.stringify([difficulty]));
+				}
+				updateSettings(...settings);
+			
+			};
+
+            easy.onclick = () => setDifficulty('easy');
+            medium.onclick = () => setDifficulty('medium');
+            hard.onclick = () => setDifficulty('hard');
+            expert.onclick = () => setDifficulty('expert');
             easy.innerHTML = "Easy";
             medium.innerHTML = "Medium";
             hard.innerHTML = "Hard";
@@ -343,12 +453,25 @@
             generate_grid();
 
             render();
+			socket.onopen = event => {
+				const d = window.localStorage.getItem("difficulty");
+				setDifficulty(d);
+			
+			};
+			return setDifficulty;
         };
         let width = 30;
         let height = 16;
         let mines = 99;
         Module.onRuntimeInitialized = event => {
-            generate_html(width, height);
+            const setDifficulty = generate_html(width, height);
+			const d = window.localStorage.getItem("difficulty");
+			if (d === null) {
+				setDifficulty('easy');
+			} else {
+				setDifficulty(d);
+			}
+			
         };
     </script>
     {{{ SCRIPT }}}

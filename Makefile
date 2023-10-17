@@ -6,6 +6,8 @@ SRC_DIR=src
 BUILD_DIR=build
 EMSDK_REPO=https://github.com/emscripten-core/emsdk.git
 
+SHELL:=/bin/env bash
+
 all: link
 
 output:
@@ -22,7 +24,7 @@ $(BUILD_DIR)/main.o: $(SRC_DIR)/main.c
 link: output $(BUILD_DIR)/main.o $(BUILD_DIR)/libmine.o
 	$(CC) $(BUILD_DIR)/main.o $(BUILD_DIR)/libmine.o -o $(OUTPUT_DIR)/$(EXE_NAME)
 
-wasm: output font $(OUTPUT_DIR)/www/index.html
+wasm: output font $(OUTPUT_DIR)/www/index.html venv
 
 font:
 	cp $(SRC_DIR)/digital-7.mono.ttf $(OUTPUT_DIR)/www/
@@ -44,3 +46,15 @@ endif
 clean:
 	rm $(BUILD_DIR)/*.o
 	rm -rf $(OUTPUT_DIR)
+
+venv:
+ifeq ("$(wildcard $(BUILD_DIR)/.venv)","")
+	python3 -m venv $(BUILD_DIR)/.venv
+else
+	@echo "Virtual environment exists."
+endif
+	source $(BUILD_DIR)/.venv/bin/activate && pip install websockets
+	@echo "To run the websocket server run \`make start\`"
+
+start:
+	source $(BUILD_DIR)/.venv/bin/activate && python3 src/db.py
