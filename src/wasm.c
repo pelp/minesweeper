@@ -5,6 +5,7 @@
 
 #define WASM_FLAG 10
 #define WASM_COVER 11
+#define WASM_MINE 9
 
 EMSCRIPTEN_KEEPALIVE MSGame_t game;
 EMSCRIPTEN_KEEPALIVE time_t end_time, start_time;
@@ -52,6 +53,10 @@ EMSCRIPTEN_KEEPALIVE char * state()
         else if (game.field[i] & COVER_MASK)
         {
             interface[i] = WASM_COVER;
+        }
+        else if (game.field[i] & MINE)
+        {
+            interface[i] = WASM_MINE;
         }
         else
         {

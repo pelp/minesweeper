@@ -2,12 +2,13 @@
 //
 // C = Covered
 // F = Flag
+// M = Is mine
 //
 // | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
-// | ------| C | F |  Surrounding  |
+// | M | - | C | F |  Surrounding  |
 //
 
-#define MINE 9
+#define MINE 0x80
 #define MASK 0xF
 #define FLAG_MASK 0x10
 #define COVER_MASK 0x20

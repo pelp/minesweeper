@@ -79,7 +79,7 @@ void _random_mine(MSGame_t *game, int *x, int *y)
     *x = rand() % game->width;
     *y = rand() % game->height;
     char *val = &game->field[*y * game->width + *x];
-    if ((*val & MASK) == 0)
+    if ((*val & MINE) == 0)
     {
         *val |= MINE;
         return;
@@ -118,7 +118,7 @@ void MSGame_print(MSGame_t *game, char xray)
             {
                 printf("#");
             }
-            else if ((*val & mask) == MINE)
+            else if (xray != 3 && *val & MINE)
             {
                 printf("*");
             }
@@ -149,8 +149,8 @@ int _peek(MSGame_t *game, int x, int y, int first)
     char open_number = (first &&
         (((*val & (FLAG_MASK | COVER_MASK)) == 0) &&
         ((*val & MASK) > 0)));
-    *val &= MASK;
-    if (*val == MINE) {
+    *val &= MASK | MINE;
+    if (*val & MINE) {
         game->started = 2;
         return 1;
     }
@@ -192,7 +192,7 @@ int MSGame_peek(MSGame_t *game, int x, int y)
         {
             _generate(game);
             char *val = &game->field[y * game->width + x];
-            if ((*val & MASK) == 0) 
+            if ((*val & (MASK | MINE)) == 0) 
             {
                 game->started = 1;
                 return MSGame_peek(game, x ,y);
@@ -266,7 +266,7 @@ void _diff(char *cstate, char *pstate, int width, int height)
             }
             if ((*pval & COVER_MASK) && ((*val & COVER_MASK) == 0))
             {
-                printf("%d %d %d\n", *val & MASK, j, i);
+                printf("%d %d %d\n", (*val & MINE) ? 9 : *val & MASK, j, i);
             }
         }
     }
